@@ -1,0 +1,25 @@
+{
+    "name": "opm",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/index.js",
+    "bin": {
+        "opm": "./dist/index.js"
+    },
+    "type": "module",
+    "dependencies": {
+        "chalk": "^5.6.2",
+        "commander": "^4.1.1"
+    },
+    "devDependencies": {
+        "@types/node": "^24.3.1"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node dist/index.js",
+        "build": "tsc"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}
