@@ -1,14 +1,15 @@
 import fs from 'fs';
-import { homedir } from 'os';
 import path from 'path';
 import chalk from 'chalk';
 import type { DepsConfig, DepsConfigLock, PackageInfo } from './types.js';
-
-const DATA_DIR = path.join(homedir(), '.opm'); // .opm
-const PKG_LIST_FILENAME = '@pkg-list.json';
-const PKG_INFOS_FILENAME = '@pkg-infos.json';
-const NODE_MODULES_DIRNAME = '@node_modules';
-const LOGS_SEPARATOR = '';
+import { 
+  DATA_DIR, 
+  PKG_INFOS_FILENAME, 
+  PKG_LIST_FILENAME, 
+  NODE_MODULES_DIRNAME, 
+  LOGS_SEPARATOR 
+} from './statics.js';
+import { installBin, saveBin } from './bin-helper.js';
 
 function createFile(pathname: string, content: string) {
   fs.writeFileSync(pathname, content);
@@ -125,6 +126,8 @@ export function saveNodeModules(parentDir: string, pkgList: string[]) {
     fs.mkdirSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME));
 
   console.log(chalk.cyan('Saving packages...'));
+
+  saveBin(parentDir);
   let counter: number = 0;
   for (let pkg of pkgList) {
     if (pkg === '') {
@@ -151,45 +154,62 @@ export function saveNodeModules(parentDir: string, pkgList: string[]) {
  * @param inMainDeps if the package should be saved in package.json
  * @returns 
  */
-export async function install(parentDir: string, pkgName: string = '*', saveDev: boolean = false, inMainDeps = true) {
+export async function install(parentDir: string, pkgName: string='*', saveDev: boolean=false, inMainDeps=true, optional=false) {
   if (pkgName !== '*') {
     verifyDepsConfig(parentDir);
 
     if (!fs.existsSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME))) 
       fs.mkdirSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME));
     
-    const srcPkgPath = path.join(DATA_DIR, NODE_MODULES_DIRNAME, pkgName);
+    const pkgKey = 'node_modules/' + pkgName;
+    const srcPkgPath = path.join(DATA_DIR, `@${pkgKey}`);
     const destPkgPath = path.join(parentDir, 'node_modules', pkgName);
+    
+    installBin(parentDir, pkgName);
+    
     if (inMainDeps)
       console.log(`${chalk.cyan(`Installing ${chalk.bold(pkgName)}...`)}`)
     if (!fs.existsSync(srcPkgPath)) {
-      console.log(chalk.red(`Package ${chalk.bold(pkgName)} not found.`));
-      console.log(`${chalk.gray('Tips:')} Go to another project that uses ${chalk.bold(pkgName)}, and run: ${chalk.cyan('opm save')}`);
+      if (!optional) {
+        console.log(chalk.red(`Package ${chalk.bold(pkgName)} not found.`));
+        console.log(`${chalk.gray('Tips:')} Go to another project that uses ${chalk.bold(pkgName)}, and run: ${chalk.cyan('opm save')}`);
+      } else {
+        console.log(chalk.yellow('WARN'), `Optional dependency ${chalk.bold(pkgName)} not found.`);
+      }
       if (inMainDeps) {
         console.log(LOGS_SEPARATOR);
       }
       return;
     }
 
-    fs.cpSync(srcPkgPath, destPkgPath, { recursive: true });
-
-    const pkgKey = 'node_modules/' + pkgName;
     const savedPkgInfos = getSavedPkgInfos();
     const depsConfigLock = getDepsConfigLock(parentDir);
-
+    
+    fs.cpSync(path.join(DATA_DIR, `@${pkgKey}`), destPkgPath, { recursive: true });
+    
     const pkgInfo = savedPkgInfos[pkgKey];
     const pkgVersion = pkgInfo?.version;
     const pkgDeps = pkgInfo?.dependencies;
+    const pkgOptDeps = pkgInfo?.optionalDependencies;
     const pkgDepsEntries = pkgDeps ? Object.entries(pkgDeps) : [];
-    
+    const pkgOptDepsEntries = pkgOptDeps ? Object.entries(pkgOptDeps) : [];
+
     let counter: number = 1;
     for (let entry of pkgDepsEntries) {
-      if (depsConfigLock.packages[pkgKey]) {
+      if (!inMainDeps && depsConfigLock.packages[pkgKey]) {
         // package already in package-lock.json
         return;
       }
       counter++;
       install(parentDir, entry[0], false, false);
+    }
+    for (let entry of pkgOptDepsEntries) {
+      if (!inMainDeps && depsConfigLock.packages[pkgKey]) {
+        // package already in package-lock.json
+        return;
+      }
+      counter++;
+      install(parentDir, entry[0], false, false, true);
     }
     
     if (!pkgVersion) {

@@ -5,6 +5,7 @@ export type PackageInfo = {
   license: string;
   engines: Record<string, string>;
   dependencies: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
 }
 // type for package.json
 export type DepsConfig = {

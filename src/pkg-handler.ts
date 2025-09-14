@@ -1,6 +1,11 @@
 import * as pkgHelper from "./pkg-helper.js";
 import type { PackageInfo } from "./types.js";
 
+/**
+ * Saves all the package from the project.
+ * 
+ * @param parentDir 
+ */
 export function savePackages(parentDir: string) {
   const pkgInfos: Record<string, PackageInfo> = pkgHelper.getPkgs(parentDir);
   const pkgPaths: string[] = pkgHelper.getPkgPaths(pkgInfos);
@@ -17,6 +22,15 @@ export function savePackages(parentDir: string) {
   pkgHelper.saveNodeModules(parentDir, pkgPaths);
 }
 
+/**
+ * Add dependencies to the project. 
+ * If no package specified, this installs all the dependecies in the project.
+ * 
+ * @param parentDir 
+ * @param pkgNames 
+ * @param saveDev 
+ * @returns 
+ */
 export function installPackages(parentDir: string, pkgNames: string|string[]|null = null, saveDev = false) {
   if (pkgNames === null) {
     pkgHelper.install(parentDir, '*', saveDev);
@@ -31,6 +45,12 @@ export function installPackages(parentDir: string, pkgNames: string|string[]|nul
   pkgHelper.install(parentDir, pkgNames, saveDev);
 }
 
+/**
+ * Removes packages from the project.
+ * 
+ * @param parentDir 
+ * @param pkgNames 
+ */
 export function uninstallPackages(parentDir: string, pkgNames: string) {
   pkgHelper.uninstall(parentDir, pkgNames);
 }
