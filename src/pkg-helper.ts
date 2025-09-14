@@ -1,7 +1,7 @@
-import chalk from 'chalk';
 import fs from 'fs';
 import { homedir } from 'os';
 import path from 'path';
+import chalk from 'chalk';
 import type { DepsConfig, DepsConfigLock, PackageInfo } from './types.js';
 
 const DATA_DIR = path.join(homedir(), '.opm'); // .opm
