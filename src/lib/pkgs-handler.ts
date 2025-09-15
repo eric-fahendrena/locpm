@@ -1,5 +1,5 @@
-import * as pkgHelper from "./pkg-helper.js";
-import type { PackageInfo } from "./types.js";
+import * as pkgHelper from "../helpers/pkg.helper.js";
+import type { PackageInfo } from "../types.js";
 
 /**
  * Saves all the package from the project.
@@ -53,4 +53,13 @@ export function installPackages(parentDir: string, pkgNames: string|string[]|nul
  */
 export function uninstallPackages(parentDir: string, pkgNames: string) {
   pkgHelper.uninstall(parentDir, pkgNames);
+}
+
+/**
+ * Delete ./node_modules and ./package-lock.json
+ * 
+ * @param parentDir 
+ */
+export function deleteModules(parentDir: string) {
+  pkgHelper.deleteNodeModules(parentDir);
 }

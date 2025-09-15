@@ -1,15 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
-import type { DepsConfig, DepsConfigLock, PackageInfo } from './types.js';
+import type { DepsConfig, DepsConfigLock, PackageInfo } from '../types.js';
 import { 
   DATA_DIR, 
   PKG_INFOS_FILENAME, 
   PKG_LIST_FILENAME, 
   NODE_MODULES_DIRNAME, 
   LOGS_SEPARATOR 
-} from './statics.js';
-import { installBin, saveBin } from './bin-helper.js';
+} from '../constants.js';
+import { installBin, saveBin } from './bin.helper.js';
 
 function createFile(pathname: string, content: string) {
   fs.writeFileSync(pathname, content);
@@ -154,7 +154,7 @@ export function saveNodeModules(parentDir: string, pkgList: string[]) {
  * @param inMainDeps if the package should be saved in package.json
  * @returns 
  */
-export async function install(parentDir: string, pkgName: string='*', saveDev: boolean=false, inMainDeps=true, optional=false) {
+export function install(parentDir: string, pkgName: string='*', saveDev: boolean=false, inMainDeps=true, optional=false) {
   if (pkgName !== '*') {
     verifyDepsConfig(parentDir);
 
@@ -196,17 +196,17 @@ export async function install(parentDir: string, pkgName: string='*', saveDev: b
 
     let counter: number = 1;
     for (let entry of pkgDepsEntries) {
-      if (!inMainDeps && depsConfigLock.packages[pkgKey]) {
-        // package already in package-lock.json
-        return;
+      if (fs.existsSync(path.join(parentDir, 'node_modules', entry[0]))) {
+        // package already installed
+        continue;
       }
       counter++;
       install(parentDir, entry[0], false, false);
     }
     for (let entry of pkgOptDepsEntries) {
-      if (!inMainDeps && depsConfigLock.packages[pkgKey]) {
-        // package already in package-lock.json
-        return;
+      if (fs.existsSync(path.join(parentDir, 'node_modules', entry[0]))) {
+        // package already installed
+        continue;
       }
       counter++;
       install(parentDir, entry[0], false, false, true);
@@ -416,4 +416,15 @@ export function savePkgToConfigLock(parentDir: string, pkgName: string) {
     depsConfigLock.packages[pkgKey] = pkgInfo;
   
   createFile(pkgLockPath, JSON.stringify(depsConfigLock, null, 4));
+}
+
+export function deleteNodeModules(parentDir: string) {
+  const modulesPath = path.join(parentDir, 'node_modules');
+  const lockFilePath = path.join(parentDir, 'package-lock.json');
+  if (fs.existsSync(modulesPath)) {
+    fs.rmSync(modulesPath, { recursive: true, force: true });
+  }
+  if (fs.existsSync(lockFilePath)) {
+    fs.rmSync(lockFilePath);
+  }
 }

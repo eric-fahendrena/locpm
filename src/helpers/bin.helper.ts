@@ -1,5 +1,5 @@
 import path from "path";
-import { BIN_DIRNAME, DATA_DIR } from "./statics.js";
+import { BIN_DIRNAME, DATA_DIR } from "../constants.js";
 import fs from "fs";
 
 export function getBinFromData(pkgName: string): string|false {
