@@ -2,12 +2,10 @@ import * as pkgHelper from "../helpers/pkg.helper.js";
 import type { PackageInfo } from "../types.js";
 
 /**
- * Saves all the package from the project.
- * 
- * @param parentDir 
+ * Saves all the package from the project. 
  */
-export function savePackages(parentDir: string) {
-  const pkgInfos: Record<string, PackageInfo> = pkgHelper.getPkgs(parentDir);
+export function savePackages() {
+  const pkgInfos: Record<string, PackageInfo> = pkgHelper.getPkgs();
   const pkgPaths: string[] = pkgHelper.getPkgPaths(pkgInfos);
   
   const currPkgList: string[] = pkgHelper.getSavedPkgList();
@@ -19,30 +17,29 @@ export function savePackages(parentDir: string) {
   pkgHelper.updatePkgInfosFile(updatedPkgInfos);
   pkgHelper.updatePkgListFile([...new Set(updatedPkgList)]);
   
-  pkgHelper.saveNodeModules(parentDir, pkgPaths);
+  pkgHelper.saveNodeModules(pkgPaths);
 }
 
 /**
  * Add dependencies to the project. 
  * If no package specified, this installs all the dependecies in the project.
  * 
- * @param parentDir 
  * @param pkgNames 
  * @param saveDev 
  * @returns 
  */
-export function installPackages(parentDir: string, pkgNames: string|string[]|null = null, saveDev = false) {
+export function installPackages(pkgNames: string|string[]|null = null, saveDev = false) {
   if (pkgNames === null) {
-    pkgHelper.install(parentDir, '*', saveDev);
+    pkgHelper.install('*', saveDev);
     return;
   }
   if (Array.isArray(pkgNames)) {
     for (let pkgName of pkgNames) {
-      pkgHelper.install(parentDir, pkgName, saveDev);
+      pkgHelper.install(pkgName, saveDev);
     }
     return;
   }
-  pkgHelper.install(parentDir, pkgNames, saveDev);
+  pkgHelper.install(pkgNames, saveDev);
 }
 
 /**
@@ -51,8 +48,8 @@ export function installPackages(parentDir: string, pkgNames: string|string[]|nul
  * @param parentDir 
  * @param pkgNames 
  */
-export function uninstallPackages(parentDir: string, pkgNames: string) {
-  pkgHelper.uninstall(parentDir, pkgNames);
+export function uninstallPackages(pkgNames: string) {
+  pkgHelper.uninstall(pkgNames);
 }
 
 /**
@@ -60,6 +57,6 @@ export function uninstallPackages(parentDir: string, pkgNames: string) {
  * 
  * @param parentDir 
  */
-export function deleteModules(parentDir: string) {
-  pkgHelper.deleteNodeModules(parentDir);
+export function deleteModules() {
+  pkgHelper.deleteNodeModules();
 }

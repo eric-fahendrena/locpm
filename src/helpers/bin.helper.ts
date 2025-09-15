@@ -10,8 +10,8 @@ export function getBinFromData(pkgName: string): string|false {
   return datBinPath;
 }
 
-export function saveBin(parentDir: string) {
-  const binPath = path.join(parentDir, 'node_modules', '.bin', '.');
+export function saveBin() {
+  const binPath = './node_modules/.bin';
   if (!fs.existsSync(binPath)) {
     // bin not found
     return;
@@ -20,11 +20,11 @@ export function saveBin(parentDir: string) {
   fs.cpSync(binPath, path.join(DATA_DIR, BIN_DIRNAME), { recursive: true });
 }
 
-export function installBin(parentDir: string, pkgName: string) {
+export function installBin(pkgName: string) {
   pkgName = pkgName.replace('@', '');
 
   const datBinPath = getBinFromData(pkgName);
-  const parentBinPath = path.join(parentDir, 'node_modules', '.bin', pkgName);
+  const parentBinPath = './node_modules/.bin/' + pkgName;
   if (!datBinPath) {
     // bin not found
     return;

@@ -8,7 +8,6 @@ import chalk from "chalk";
 pkgHelper.createDataDir();
 
 const VERSION = '1.0.0';
-const PARENT_DIR = './';
 const program = new Command();
 const COMPLETE_PROC_MESSAGE = '\nThe process is complete.';
 
@@ -26,7 +25,7 @@ program
   .command('save')
   .description('save all the packages from current project')
   .action(() => {
-    pkgsHandler.savePackages(PARENT_DIR);
+    pkgsHandler.savePackages();
     console.log(COMPLETE_PROC_MESSAGE);
   });
 
@@ -39,9 +38,9 @@ program
   .description('add dependencies to your project')
   .action((pkgs) => {
     if (pkgs.length <= 0) {
-      pkgsHandler.installPackages(PARENT_DIR);
+      pkgsHandler.installPackages();
     } else {
-      pkgsHandler.installPackages(PARENT_DIR, pkgs, program.saveDev);
+      pkgsHandler.installPackages(pkgs, program.saveDev);
     }
     console.log(COMPLETE_PROC_MESSAGE);
   });
@@ -50,7 +49,7 @@ program
   .command('uninstall <pkgs...>')
   .description('remove packages from your project')
   .action((pkgs) => {
-    pkgHelper.uninstall(PARENT_DIR, pkgs);
+    pkgHelper.uninstall(pkgs);
     console.log(COMPLETE_PROC_MESSAGE);
   });
 
@@ -60,7 +59,7 @@ program
   .action(() => {
     if (program.force) {
       console.log(chalk.cyan('Deleting all modules...'));
-      pkgsHandler.deleteModules(PARENT_DIR);
+      pkgsHandler.deleteModules();
 
       console.log(COMPLETE_PROC_MESSAGE);
       return;
