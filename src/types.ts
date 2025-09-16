@@ -8,7 +8,7 @@ export type PackageInfo = {
   optionalDependencies?: Record<string, string>;
 }
 // type for package.json
-export type DepsConfig = {
+export type PkgConfig = {
   name: string;
   version: string;
   description: string;
@@ -22,10 +22,21 @@ export type DepsConfig = {
   type: string;
 };
 
-export type DepsConfigLock = {
+export type PkgLockConfig = {
   name: string;
   version: string;
   lockfileVersion: number;
   requires: boolean;
   packages: Record<string, PackageInfo>;
 }
+
+export type PkgVersionInfo = {
+  key: string;
+  version: string;
+}
+
+export type InstallationOptions = {
+  saveDev?: boolean;
+  ignoreVersion?: boolean;
+}
+

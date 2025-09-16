@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
-import type { DepsConfig, DepsConfigLock, PackageInfo } from '../types.js';
+import type { PkgConfig, InstallationOptions, PackageInfo, PkgVersionInfo, PkgLockConfig } from '../types.js';
 import { 
   DATA_DIR, 
   PKG_INFOS_FILENAME, 
@@ -10,6 +10,7 @@ import {
   LOGS_SEPARATOR 
 } from '../constants.js';
 import { installBin, saveBin } from './bin.helper.js';
+import { getLatestVersion, getVersionedKeyPkgInfos, getVersionedKeyString, convertToVersionInfo } from './version.helper.js';
 
 function createFile(pathname: string, content: string) {
   fs.writeFileSync(pathname, content);
@@ -29,14 +30,15 @@ export function createDataDir() {
  * 
  * @returns 
  */
-export function getPkgs(): Record<string, PackageInfo> {
+export function getPkgInfos(): Record<string, PackageInfo> {
   const lockFilePath = './package-lock.json';
   const lockFile = fs.readFileSync(lockFilePath, 'utf-8');
   const lockfContent = lockFile.toString();
   const lockfJson = JSON.parse(lockfContent);
-  const pkgs = lockfJson.packages;
+  const pkgInfos = lockfJson.packages;
 
-  return pkgs;
+  const vkPkgInfos = getVersionedKeyPkgInfos(pkgInfos);
+  return vkPkgInfos;
 }
 
 /**
@@ -45,7 +47,7 @@ export function getPkgs(): Record<string, PackageInfo> {
  * @param pkgs 
  * @returns 
  */
-export function getPkgPaths(pkgs: Record<string, PackageInfo>): string[] {
+export function getPkgKeys(pkgs: Record<string, PackageInfo>): string[] {
   const pkgEntries = Object.entries(pkgs);
   let pkgPaths: string[] = [];
   
@@ -60,7 +62,7 @@ export function getPkgPaths(pkgs: Record<string, PackageInfo>): string[] {
  * Updates ~/.opm/@pkg-list.json.
  * @param pkgList 
  */
-export function updatePkgListFile(pkgList: string[]): void {
+export function updatePkgKeysFile(pkgList: string[]): void {
   const pkgListStr = JSON.stringify(pkgList, null, 4);
   if (!fs.existsSync(DATA_DIR)) 
     fs.mkdirSync(DATA_DIR);
@@ -84,7 +86,7 @@ export function updatePkgInfosFile(pkgInfos: Record<string, PackageInfo>): void 
  * Gets data from ~/.opm/pkg-list.json
  * @returns package list
  */
-export function getSavedPkgList(): string[] {
+export function getSavedPkgKeys(): string[] {
   if (!fs.existsSync(DATA_DIR)) 
     fs.mkdirSync(DATA_DIR);
 
@@ -119,133 +121,88 @@ export function getSavedPkgInfos(): Record<string, PackageInfo> {
  * 
  * @param pkgList 
  */
-export function saveNodeModules(pkgList: string[]) {
+export function saveNodeModules() {
   if (!fs.existsSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME))) 
     fs.mkdirSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME));
 
   console.log(chalk.cyan('Saving packages...'));
 
   saveBin();
+
+  const pkgInfos = getPkgInfos();
+  const vPkgKeys = getPkgKeys(pkgInfos);
+  const savedInfos = getSavedPkgInfos();
+  const savedKeys = getSavedPkgKeys();
+
   let counter: number = 0;
-  for (let pkg of pkgList) {
-    if (pkg === '') {
+  for (let vPkgKey of vPkgKeys) {
+    const pkgVersionInfo = convertToVersionInfo(vPkgKey);
+    if (!pkgVersionInfo) {
+      // Package version not found !
       continue;
     }
-    const src = './' + pkg;
-    const dest = path.join(DATA_DIR, `@${pkg}`);
+    const src = './' + pkgVersionInfo.key;
+    const dest = path.join(DATA_DIR, `@${vPkgKey}`);
     if (!fs.existsSync(src)) {
       console.log(chalk.yellow('WARN'), 'No such file or direcory:', chalk.gray(src));
       continue;
+    }
+    if (pkgInfos[vPkgKey]) {
+      savedInfos[vPkgKey] = pkgInfos[vPkgKey];
+      savedKeys.push(vPkgKey);
+
+      updatePkgInfosFile(savedInfos);
+      updatePkgKeysFile(savedKeys);
     }
     fs.cpSync(src, dest, { recursive: true });
     counter++;
   }
 
-  console.log(`\nSaved packages: ${chalk.yellow(counter)}, Ignored packages: ${chalk.yellow((pkgList.length) - counter)}.`); // -1 removes the package with empty name ""
+  console.log(`\nSaved packages: ${chalk.yellow(counter)}, Ignored packages: ${chalk.yellow((vPkgKeys.length) - counter)}.`); // -1 removes the package with empty name ""
 }
 
 /**
+ * Installs package in the project.
  * 
  * @param pkgName 
- * @param saveDev 
- * @param inMainDeps if the package should be saved in package.json
+ * @param version 
+ * @param options 
  * @returns 
  */
-export function install(pkgName: string='*', saveDev: boolean=false, inMainDeps=true, optional=false) {
-  if (pkgName !== '*') {
-    verifyDepsConfig();
+export function install(pkgName: string, version: string='latest', options: InstallationOptions={}): boolean {
+  let pkgKey = 'node_modules/' + pkgName;
+  let vPkgKey: string|null;
+  let savedPkgKeys: string[];
+  let versionInfo: PkgVersionInfo|null;
 
-    if (!fs.existsSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME))) 
-      fs.mkdirSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME));
-    
-    const pkgKey = 'node_modules/' + pkgName;
-    const srcPkgPath = path.join(DATA_DIR, `@${pkgKey}`);
-    const destPkgPath = './node_modules/' + pkgName;
-    
-    installBin(pkgName);
-    
-    if (inMainDeps)
-      console.log(`${chalk.cyan(`Installing ${chalk.bold(pkgName)}...`)}`)
-    if (!fs.existsSync(srcPkgPath)) {
-      if (!optional) {
-        console.log(chalk.red(`Package ${chalk.bold(pkgName)} not found.`));
-        console.log(`${chalk.gray('Tips:')} Go to another project that uses ${chalk.bold(pkgName)}, and run: ${chalk.cyan('opm save')}`);
-      } else {
-        console.log(chalk.yellow('WARN'), `Optional dependency ${chalk.bold(pkgName)} not found.`);
-      }
-      if (inMainDeps) {
-        console.log(LOGS_SEPARATOR);
-      }
-      return;
-    }
+  savedPkgKeys = getSavedPkgKeys();
 
-    const savedPkgInfos = getSavedPkgInfos();
-    const depsConfigLock = getDepsConfigLock();
-    
-    fs.cpSync(path.join(DATA_DIR, `@${pkgKey}`), destPkgPath, { recursive: true });
-    
-    const pkgInfo = savedPkgInfos[pkgKey];
-    const pkgVersion = pkgInfo?.version;
-    const pkgDeps = pkgInfo?.dependencies;
-    const pkgOptDeps = pkgInfo?.optionalDependencies;
-    const pkgDepsEntries = pkgDeps ? Object.entries(pkgDeps) : [];
-    const pkgOptDepsEntries = pkgOptDeps ? Object.entries(pkgOptDeps) : [];
-
-    let counter: number = 1;
-    for (let entry of pkgDepsEntries) {
-      if (fs.existsSync('./node_modules/' + entry[0])) {
-        // package already installed
-        continue;
-      }
-      counter++;
-      install(entry[0], false, false);
+  if (version === 'latest') {
+    vPkgKey = getLatestVersion(pkgKey, savedPkgKeys);
+    if (!vPkgKey) {
+      console.log(chalk.red(`No package version found for ${chalk.bold(pkgName)}.`));
+      return false;
     }
-    for (let entry of pkgOptDepsEntries) {
-      if (fs.existsSync('.node_modules' + entry[0])) {
-        // package already installed
-        continue;
-      }
-      counter++;
-      install(entry[0], false, false, true);
+  } else {
+    vPkgKey = getVersionedKeyString(pkgKey, version);
+    if (!savedPkgKeys.find(item => item === vPkgKey)) {
+      console.log(chalk.red(`Package ${chalk.bold(pkgName)} (v${version}) not found.`));
+      return false;
     }
-    
-    if (!pkgVersion) {
-      console.log(chalk.red('Package version not specified.'));
-      return;
-    }
-    
-    // saving to package-lock.json
-    if (pkgInfo)
-      savePkgToConfigLock(pkgName);
-
-    // saving to depsConfig
-    if (inMainDeps) {
-      saveDepToConfig(pkgName, pkgVersion, saveDev);
-      console.log(`Package ${chalk.bold(pkgName)} (${chalk.gray(`v${pkgVersion}`)}) installed!`);
-      console.log(`${chalk.yellow(counter)} packages added.`);
-      console.log(LOGS_SEPARATOR);
-    }
-
-    return;
   }
 
-  // pkgName === '*'
-  // Install every dependence in package.json
-  const depsConfig = getDepsConfig();
-  
-  const depsEntries = Object.entries({
-    ...depsConfig.dependencies, 
-    ...depsConfig.devDependencies
-  });
-  console.log(chalk.cyan(`Installing ${chalk.bold(depsEntries.length)} packages...`));
-
-  let counter: number = 0;
-  for (let entry of depsEntries) {
-    install(entry[0], false, false); // no, don't save it to package.json
-    counter++;
+  versionInfo = convertToVersionInfo(vPkgKey);
+  if (!versionInfo) {
+    console.log(chalk.red(`Cannot find package version info.`));
+    return false;
   }
 
-  console.log(`\nInstalled packages: ${chalk.yellow(counter)}. Ignored packages: ${chalk.yellow((depsEntries.length) - counter)}.`);
+  // copy to node_modules
+  fs.cpSync(path.join(DATA_DIR, `@${vPkgKey}`), pkgKey, { recursive: true });
+  saveToLockFile(vPkgKey);
+  installBin(pkgName);
+
+  return true;
 }
 
 /**
@@ -256,7 +213,7 @@ export function install(pkgName: string='*', saveDev: boolean=false, inMainDeps=
  * @param pkgName 
  */
 export function uninstall(pkgNames: string|string[]) {
-  const depsConfig = getDepsConfig();
+  const depsConfig = getPkgConfig();
   
   console.log(chalk.cyan('Removing packages...'));
   if (!Array.isArray(pkgNames)) {
@@ -311,7 +268,7 @@ export function verifyDepsConfig(): boolean {
  * 
  * @returns 
  */
-export function getDepsConfig(): DepsConfig {
+export function getPkgConfig(): PkgConfig {
   verifyDepsConfig();
 
   const dcBuffer = fs.readFileSync('./package.json');
@@ -328,8 +285,8 @@ export function getDepsConfig(): DepsConfig {
  * @param saveDev 
  * @returns 
  */
-export function saveDepToConfig(pkgName: string, version: string, saveDev = false): DepsConfig {
-  const depsConfig: DepsConfig = getDepsConfig();
+export function saveDepToConfig(pkgName: string, version: string, saveDev = false): PkgConfig {
+  const depsConfig: PkgConfig = getPkgConfig();
   const newConfig = depsConfig;
   let shouldUpdate = true;
   if (saveDev) {
@@ -360,21 +317,21 @@ export function saveDepToConfig(pkgName: string, version: string, saveDev = fals
  * 
  * @returns 
  */
-export function getDepsConfigLock(): DepsConfigLock {
+export function getPkgLockConfig(): PkgLockConfig {
   verifyDepsConfig();
   
   const pkgLockPath = './package-lock.json';
   if (!fs.existsSync(pkgLockPath)) {
     console.log(chalk.cyan('Creating package-lock.json...'));
-    const depsConfig = getDepsConfig();
-    const depsConfigLock: DepsConfigLock = {
-      name: depsConfig.name,
-      version: depsConfig.version,
+    const pkgConfig = getPkgConfig();
+    const pkgConfigLock: PkgLockConfig = {
+      name: pkgConfig.name,
+      version: pkgConfig.version,
       lockfileVersion: 3,
       requires: true,
       packages: {},
     }
-    createFile(pkgLockPath, JSON.stringify(depsConfigLock, null, 4));
+    createFile(pkgLockPath, JSON.stringify(pkgConfigLock, null, 4));
   }
   const dcLockBuffer = fs.readFileSync(pkgLockPath);
   const dcLockString = dcLockBuffer.toString();
@@ -385,33 +342,21 @@ export function getDepsConfigLock(): DepsConfigLock {
 /**
  * Saves package to ./package-lock.json.
  *  
- * @param pkgName 
+ * @param vPkgKey
  */
-export function savePkgToConfigLock(pkgName: string) {
+export function saveToLockFile(vPkgKey: string) {
   verifyDepsConfig();
   
-  const pkgLockPath = '.package-lock.json';
-  const depsConfig = getDepsConfig();
-  const oldDepsConfigLock = getDepsConfigLock();
-  const oldPkgs = oldDepsConfigLock.packages;
+  let pkgLockConfig: PkgLockConfig;
+  const pkgInfo = getSavedPkgInfos()[vPkgKey];
+  const lockFilePath = './package-lock.json';
+  const pkgKey = convertToVersionInfo(vPkgKey)?.key;
   
-  const pkgKey = 'node_modules/' + pkgName;
-  const savedPkgInfos = getSavedPkgInfos();
-  const pkgInfo = savedPkgInfos[pkgKey];
+  pkgLockConfig = getPkgLockConfig();
+  if (pkgKey && pkgInfo)
+    pkgLockConfig.packages[pkgKey] = pkgInfo;
 
-  const depsConfigLock: DepsConfigLock = {
-    name: depsConfig.name,
-    version: depsConfig.version,
-    lockfileVersion: 3,
-    requires: true,
-    packages: {
-      ...oldPkgs,
-    },
-  };
-  if (pkgInfo)
-    depsConfigLock.packages[pkgKey] = pkgInfo;
-  
-  createFile(pkgLockPath, JSON.stringify(depsConfigLock, null, 4));
+  createFile(lockFilePath, JSON.stringify(pkgLockConfig, null, 4));
 }
 
 export function deleteNodeModules() {

@@ -17,6 +17,7 @@ program
   .version(VERSION)
   .option('-D, --save-dev', 'the packages will appear in devDependencies')
   .option('-f, --force', 'force the execution without confirmation')
+  .option('-i, --ignore-version', 'install the latest available version')
   .action(() => {
     program.help();
   })
@@ -37,11 +38,10 @@ program
   .command('install [pkgs...]')
   .description('add dependencies to your project')
   .action((pkgs) => {
-    if (pkgs.length <= 0) {
-      pkgsHandler.installPackages();
-    } else {
-      pkgsHandler.installPackages(pkgs, program.saveDev);
-    }
+    const { saveDev, ignoreVersion } = program;
+    
+    pkgsHandler.installPackages(pkgs, { saveDev, ignoreVersion });
+    
     console.log(COMPLETE_PROC_MESSAGE);
   });
 
