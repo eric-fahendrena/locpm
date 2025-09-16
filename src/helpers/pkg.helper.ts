@@ -144,7 +144,7 @@ export function saveNodeModules() {
     const src = './' + pkgVersionInfo.key;
     const dest = path.join(DATA_DIR, `@${vPkgKey}`);
     if (!fs.existsSync(src)) {
-      console.log(chalk.yellow('WARN'), 'No such file or direcory:', chalk.gray(src));
+      console.log(chalk.yellow('WARN'), 'No such file or direcory:', chalk.gray(src)); 
       continue;
     }
     if (pkgInfos[vPkgKey]) {
