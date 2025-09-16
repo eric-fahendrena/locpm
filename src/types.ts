@@ -38,5 +38,6 @@ export type PkgVersionInfo = {
 export type InstallationOptions = {
   saveDev?: boolean;
   ignoreVersion?: boolean;
+  saveToConfig?: boolean;
 }
 

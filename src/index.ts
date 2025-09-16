@@ -40,8 +40,8 @@ program
   .action((pkgs) => {
     const { saveDev, ignoreVersion } = program;
     
-    pkgsHandler.installPackages(pkgs, { saveDev, ignoreVersion });
-    
+    pkgsHandler.installPackages(pkgs, { saveDev, ignoreVersion, saveToConfig: true });
+
     console.log(COMPLETE_PROC_MESSAGE);
   });
 

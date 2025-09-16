@@ -6,8 +6,7 @@ import {
   DATA_DIR, 
   PKG_INFOS_FILENAME, 
   PKG_LIST_FILENAME, 
-  NODE_MODULES_DIRNAME, 
-  LOGS_SEPARATOR 
+  NODE_MODULES_DIRNAME,
 } from '../constants.js';
 import { installBin, saveBin } from './bin.helper.js';
 import { getLatestVersion, getVersionedKeyPkgInfos, getVersionedKeyString, convertToVersionInfo } from './version.helper.js';
@@ -170,12 +169,20 @@ export function saveNodeModules() {
  * @returns 
  */
 export function install(pkgName: string, version: string='latest', options: InstallationOptions={}): boolean {
+  verifyDepsConfig();
+  
+  console.log(chalk.cyan(`Installing ${pkgName} (${version})...`));
+
   let pkgKey = 'node_modules/' + pkgName;
   let vPkgKey: string|null;
   let savedPkgKeys: string[];
   let versionInfo: PkgVersionInfo|null;
+  let savedPkgInfos: Record<string, PackageInfo>;
+  let pkgInfo: PackageInfo|undefined;
+  let depsEntries: [string, string][];
 
   savedPkgKeys = getSavedPkgKeys();
+  version = !options.ignoreVersion ? version : 'latest'; // force version to be latest
 
   if (version === 'latest') {
     vPkgKey = getLatestVersion(pkgKey, savedPkgKeys);
@@ -185,6 +192,7 @@ export function install(pkgName: string, version: string='latest', options: Inst
     }
   } else {
     vPkgKey = getVersionedKeyString(pkgKey, version);
+    console.log('Versioned', vPkgKey);
     if (!savedPkgKeys.find(item => item === vPkgKey)) {
       console.log(chalk.red(`Package ${chalk.bold(pkgName)} (v${version}) not found.`));
       return false;
@@ -197,10 +205,33 @@ export function install(pkgName: string, version: string='latest', options: Inst
     return false;
   }
 
+  savedPkgInfos = getSavedPkgInfos();
+  pkgInfo = savedPkgInfos[vPkgKey];
+  if (!pkgInfo) {
+    console.log(chalk.red('Package info not found.'));
+    return false;
+  }
+
+  // install all the dependences first
+  if (pkgInfo.dependencies) {
+    depsEntries = Object.entries(pkgInfo.dependencies);
+    for (let entry of depsEntries) {
+      const version = !options.ignoreVersion ? entry[1] : 'latest';
+      install(entry[0], version, { 
+        ignoreVersion: !!options.ignoreVersion,
+        saveToConfig: false,
+      });
+    }
+  }
+
   // copy to node_modules
   fs.cpSync(path.join(DATA_DIR, `@${vPkgKey}`), pkgKey, { recursive: true });
-  saveToLockFile(vPkgKey);
   installBin(pkgName);
+  saveToLockFile(vPkgKey);
+  if (options.saveToConfig)
+    saveDepToConfig(pkgName, pkgInfo.version, options.saveDev);
+
+  console.log(chalk.green(`${chalk.bold(pkgName)} (${pkgInfo.version}) successfully installed.`));
 
   return true;
 }
@@ -344,7 +375,7 @@ export function getPkgLockConfig(): PkgLockConfig {
  *  
  * @param vPkgKey
  */
-export function saveToLockFile(vPkgKey: string) {
+export function saveToLockFile(vPkgKey: string): PkgLockConfig {
   verifyDepsConfig();
   
   let pkgLockConfig: PkgLockConfig;
@@ -357,6 +388,8 @@ export function saveToLockFile(vPkgKey: string) {
     pkgLockConfig.packages[pkgKey] = pkgInfo;
 
   createFile(lockFilePath, JSON.stringify(pkgLockConfig, null, 4));
+  
+  return pkgLockConfig;
 }
 
 export function deleteNodeModules() {
