@@ -11,6 +11,7 @@ import {
 } from '../constants.js';
 import { installBin, saveBin } from './bin.helper.js';
 import { getLatestVersion, getVersionedKeyPkgInfos, getVersionedKeyString, convertToVersionInfo, compareVersions } from './version.helper.js';
+import { cyan, pink, warn } from '../utils/logs.js';
 
 function createFile(pathname: string, content: string) {
   fs.writeFileSync(pathname, content);
@@ -20,6 +21,13 @@ function sleep(ms: number): Promise<unknown> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Chack if package exists.
+ * 
+ * @param pkgKey 
+ * @param version 
+ * @returns 
+ */
 function findPackage(pkgKey: string, version: string): string|undefined {
   const vPkgKey = getVersionedKeyString(pkgKey, version);
   const savedKeys = getSavedPkgKeys();
@@ -52,6 +60,10 @@ export function createDataDir() {
  */
 export function getPkgInfos(): Record<string, PackageInfo> {
   const lockFilePath = './package-lock.json';
+  if (!fs.existsSync(lockFilePath)) {
+    console.log(chalk.red('ERR'), './package-lock.json file not found.');
+    process.exit(0);
+  }
   const lockFile = fs.readFileSync(lockFilePath, 'utf-8');
   const lockfContent = lockFile.toString();
   const lockfJson = JSON.parse(lockfContent);
@@ -145,7 +157,7 @@ export function saveNodeModules() {
   if (!fs.existsSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME))) 
     fs.mkdirSync(path.join(DATA_DIR, NODE_MODULES_DIRNAME));
 
-  console.log(chalk.cyan('Saving packages...'));
+  console.log(cyan('Saving packages...'));
 
   saveBin();
 
@@ -164,7 +176,7 @@ export function saveNodeModules() {
     const src = './' + pkgVersionInfo.key;
     const dest = path.join(DATA_DIR, `@${vPkgKey}`);
     if (!fs.existsSync(src)) {
-      console.log(chalk.yellow('WARN'), 'No such file or direcory:', chalk.gray(src)); 
+      console.log(warn('WARN'), 'No such file or direcory:', chalk.gray(src)); 
       continue;
     }
     if (pkgInfos[vPkgKey]) {
@@ -178,7 +190,7 @@ export function saveNodeModules() {
     counter++;
   }
 
-  console.log(`\nSaved packages: ${chalk.yellow(counter)}, Ignored packages: ${chalk.yellow((vPkgKeys.length) - counter)}.`); // -1 removes the package with empty name ""
+  console.log(`\nSaved packages: ${pink(counter)}, Ignored packages: ${pink((vPkgKeys.length) - counter)}.`); // -1 removes the package with empty name ""
 }
 
 /**
@@ -211,6 +223,7 @@ export function install(pkgName: string, version: string='latest', options: Inst
         return false;
       }
       console.log(chalk.red(`No package version found for ${chalk.bold(pkgName)}.`));
+      console.log(chalk.gray('Tips:'), `Go to another project that uses ${chalk.bold(pink(pkgName))} and run: ${cyan('opm save-pkgs')}.`);
       return false;
     }
   } else {
@@ -219,11 +232,11 @@ export function install(pkgName: string, version: string='latest', options: Inst
       if (optional) {
         return false;
       }
-      
+
       console.log(chalk.red(`Package ${chalk.bold(pkgName)} (version=${version}) not found.`));
       console.log(chalk.gray('Tips:'));
-      console.log(` Go to another project that uses ${chalk.bold(pkgName)} (version=${version}) and run: ${chalk.cyan('opm save-pkgs')}. (recomended)`);
-      console.log(' Use the -i or --ignore-version option to install the latest available version.');
+      console.log(` Go to another project that uses ${chalk.bold(pink(pkgName))} (${pink('version='+version)}) and run: ${cyan('opm save-pkgs')}. (recomended)`);
+      console.log(` Use the ${cyan('-i')} or ${cyan('--ignore-version')} option to install the latest available version.`);
       console.log(LOGS_SEPARATOR);
 
       return false;
@@ -281,7 +294,7 @@ export function install(pkgName: string, version: string='latest', options: Inst
     }
 
     if (ignoredCount > 0) {
-      console.log(chalk.yellow('WARN'), chalk.gray(`${chalk.bold(pkgName)} ignores ${chalk.bold(ignoredCount)} optional dependenc${ignoredCount > 1 ? 'ies' : 'y'}.`));
+      console.log(warn('WARN'), chalk.gray(`${chalk.bold(pkgName)} ignores ${chalk.bold(ignoredCount)} optional dependenc${ignoredCount > 1 ? 'ies' : 'y'}.`));
     }
   }
 
@@ -339,7 +352,7 @@ export function autoInstall(options: InstallationOptions={}) {
 export function uninstall(pkgNames: string|string[]) {
   const depsConfig = getPkgConfig();
   
-  console.log(chalk.cyan('Removing packages...'));
+  console.log(cyan('Removing packages...'));
   if (!Array.isArray(pkgNames)) {
     let pkgFound = true;
     if (depsConfig.dependencies) {
@@ -353,7 +366,7 @@ export function uninstall(pkgNames: string|string[]) {
 
     console.log(pkgFound);
     if (!pkgFound)
-      console.log(chalk.yellow(`Package ${chalk.bold(pkgNames)} not found.`));
+      console.log(warn(`Package ${chalk.bold(pkgNames)} not found.`));
   } else {
     // pkgNames is an array
     for (let pkgName of pkgNames) {
@@ -370,7 +383,7 @@ export function uninstall(pkgNames: string|string[]) {
       }
 
       if (!foundPkg)
-        console.log(chalk.yellow(`Package ${chalk.bold(pkgName)} not found.`));
+        console.log(warn(`Package ${chalk.bold(pkgName)} not found.`));
     }
   }
 
@@ -446,7 +459,7 @@ export function getPkgLockConfig(): PkgLockConfig {
   
   const pkgLockPath = './package-lock.json';
   if (!fs.existsSync(pkgLockPath)) {
-    console.log(chalk.cyan('Creating package-lock.json...'));
+    console.log(cyan('Created package-lock.json.'));
     const pkgConfig = getPkgConfig();
     const pkgConfigLock: PkgLockConfig = {
       name: pkgConfig.name,
@@ -494,4 +507,6 @@ export function deleteNodeModules() {
   if (fs.existsSync(lockFilePath)) {
     fs.rmSync(lockFilePath);
   }
+
+  console.log(`${chalk.bold('./node_modules')} and ${chalk.bold('./package-lock.json')} are removed.`);
 }

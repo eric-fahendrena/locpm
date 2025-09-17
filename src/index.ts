@@ -3,13 +3,14 @@ import { Command } from "commander";
 import * as pkgsHandler from "./lib/pkgs-handler.js";
 import * as pkgHelper from "./helpers/pkg.helper.js";
 import chalk from "chalk";
+import { cyan, warn } from "./utils/logs.js";
 
 // create data directories if doesn't exist.
 pkgHelper.createDataDir();
 
 const VERSION = '1.0.0';
 const program = new Command();
-const COMPLETE_PROC_MESSAGE = '\nThe process is complete.';
+const COMPLETE_PROC_MESSAGE = cyan('\nThe process is complete.');
 
 program
   .name('opm')
@@ -58,14 +59,33 @@ program
   .description('remove ./node_modules and ./package-lock.json')
   .action(() => {
     if (program.force) {
-      console.log(chalk.cyan('Deleting all modules...'));
+      console.log(cyan('Deleting all modules...\n'));
       pkgsHandler.deleteModules();
 
       console.log(COMPLETE_PROC_MESSAGE);
       return;
     }
 
-    console.log(chalk.yellow(`This command will delete ${chalk.bold('./node_modules')} and ${chalk.bold('./package-lock.json')}.`));
+    console.log(`This command will delete ${chalk.bold('./node_modules')} and ${chalk.bold('./package-lock.json')}.`);
+    console.log('Please use the -f or --force option to confirm.');
+    console.log(COMPLETE_PROC_MESSAGE);
+  });
+
+program
+  .command('clear-cache')
+  .description('dangerously clear all saved data in the cache.')
+  .action(() => {
+    if (program.force) {
+      console.log(cyan('Clearing cache...\n'));
+      pkgsHandler.clearCache();
+
+      console.log('Cache is now empty.');
+
+      console.log(COMPLETE_PROC_MESSAGE);
+      return;
+    }
+
+    console.log(`This command will clear all saved data in the cache.`);
     console.log('Please use the -f or --force option to confirm.');
     console.log(COMPLETE_PROC_MESSAGE);
   });

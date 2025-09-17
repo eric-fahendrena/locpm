@@ -1,5 +1,8 @@
+import fs from "fs";
 import * as pkgHelper from "../helpers/pkg.helper.js";
 import type { InstallationOptions } from "../types.js";
+import path from "path";
+import { homedir } from "os";
 
 /**
  * Saves all the package from the project. 
@@ -12,7 +15,9 @@ export function savePackages() {
  * Add dependencies to the project. 
  * If no package specified, this installs all the dependecies in the project.
  * 
- * 
+ * @param pkgNames 
+ * @param options 
+ * @returns 
  */
 export function installPackages(pkgNames: string[] = [], options: InstallationOptions = {}) {
   if (pkgNames.length <= 0) {
@@ -51,4 +56,11 @@ export function uninstallPackages(pkgNames: string) {
  */
 export function deleteModules() {
   pkgHelper.deleteNodeModules();
+}
+
+/**
+ * Clear all the data stocked in the cache.
+ */
+export function clearCache() {
+  fs.rmSync(path.join(homedir(), '.opm'), { recursive: true, force: true });
 }
