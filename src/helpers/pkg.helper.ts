@@ -7,6 +7,7 @@ import {
   PKG_INFOS_FILENAME, 
   PKG_LIST_FILENAME, 
   NODE_MODULES_DIRNAME,
+  LOGS_SEPARATOR,
 } from '../constants.js';
 import { installBin, saveBin } from './bin.helper.js';
 import { getLatestVersion, getVersionedKeyPkgInfos, getVersionedKeyString, convertToVersionInfo, compareVersions } from './version.helper.js';
@@ -207,7 +208,6 @@ export function install(pkgName: string, version: string='latest', options: Inst
     vPkgKey = getLatestVersion(pkgKey, savedPkgKeys);
     if (!vPkgKey) {
       if (optional) {
-        console.log(chalk.yellow(`No package version found for the optional dependency ${chalk.bold(pkgName)}.`));
         return false;
       }
       console.log(chalk.red(`No package version found for ${chalk.bold(pkgName)}.`));
@@ -217,10 +217,15 @@ export function install(pkgName: string, version: string='latest', options: Inst
     const foundPkg = findPackage(pkgKey, version);
     if (!foundPkg) {
       if (optional) {
-        console.log(chalk.yellow(`Optional package ${chalk.bold(pkgName)} (version=${version}) not found.`));
         return false;
       }
+      
       console.log(chalk.red(`Package ${chalk.bold(pkgName)} (version=${version}) not found.`));
+      console.log(chalk.gray('Tips:'));
+      console.log(` Go to another project that uses ${chalk.bold(pkgName)} (version=${version}) and run: ${chalk.cyan('opm save-pkgs')}. (recomended)`);
+      console.log(' Use the -i or --ignore-version option to install the latest available version.');
+      console.log(LOGS_SEPARATOR);
+
       return false;
     }
     vPkgKey = foundPkg;
@@ -258,15 +263,25 @@ export function install(pkgName: string, version: string='latest', options: Inst
   }
   // install all optional dependencies
   if (pkgInfo.optionalDependencies) {
+    let ignoredCount: number=0;
+
     optDepsEntries = Object.entries(pkgInfo.optionalDependencies);
     for (let entry of optDepsEntries) {
       const version = !options.ignoreVersion ? entry[1] : 'latest';
       if (fs.existsSync('./node_modules/' + entry[0]))
         continue; // avoid to run in an infinite loop
-      install(entry[0], version, { 
+      
+      const installed = install(entry[0], version, { 
         ignoreVersion: !!options.ignoreVersion,
         saveToConfig: false,
       }, true); // true for optional
+      if (!installed) {
+        ignoredCount++;
+      }
+    }
+
+    if (ignoredCount > 0) {
+      console.log(chalk.yellow('WARN'), chalk.gray(`${chalk.bold(pkgName)} ignores ${chalk.bold(ignoredCount)} optional dependenc${ignoredCount > 1 ? 'ies' : 'y'}.`));
     }
   }
 
