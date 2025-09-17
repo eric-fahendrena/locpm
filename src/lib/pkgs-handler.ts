@@ -16,7 +16,7 @@ export function savePackages() {
  */
 export function installPackages(pkgNames: string[] = [], options: InstallationOptions = {}) {
   if (pkgNames.length <= 0) {
-    // code here...
+    pkgHelper.autoInstall(options);
     return;
   }
   

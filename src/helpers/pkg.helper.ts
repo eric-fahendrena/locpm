@@ -9,7 +9,7 @@ import {
   NODE_MODULES_DIRNAME,
 } from '../constants.js';
 import { installBin, saveBin } from './bin.helper.js';
-import { getLatestVersion, getVersionedKeyPkgInfos, getVersionedKeyString, convertToVersionInfo } from './version.helper.js';
+import { getLatestVersion, getVersionedKeyPkgInfos, getVersionedKeyString, convertToVersionInfo, compareVersions } from './version.helper.js';
 
 function createFile(pathname: string, content: string) {
   fs.writeFileSync(pathname, content);
@@ -17,6 +17,26 @@ function createFile(pathname: string, content: string) {
 
 function sleep(ms: number): Promise<unknown> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function findPackage(pkgKey: string, version: string): string|undefined {
+  const vPkgKey = getVersionedKeyString(pkgKey, version);
+  const savedKeys = getSavedPkgKeys();
+  const foundPkg = savedKeys.find(item => {
+    if (item === vPkgKey) {
+      return true;
+    }
+    const itemVInfo = convertToVersionInfo(item);
+    if (!itemVInfo) 
+      return false;
+    if (pkgKey !== itemVInfo.key) 
+      return false;
+
+    const result = compareVersions(version, itemVInfo.version);
+    return result;
+  });
+
+  return foundPkg;
 }
 
 export function createDataDir() {
@@ -168,10 +188,8 @@ export function saveNodeModules() {
  * @param options 
  * @returns 
  */
-export function install(pkgName: string, version: string='latest', options: InstallationOptions={}): boolean {
+export function install(pkgName: string, version: string='latest', options: InstallationOptions={}, optional=false): boolean {
   verifyDepsConfig();
-  
-  console.log(chalk.cyan(`Installing ${pkgName} (${version})...`));
 
   let pkgKey = 'node_modules/' + pkgName;
   let vPkgKey: string|null;
@@ -180,6 +198,7 @@ export function install(pkgName: string, version: string='latest', options: Inst
   let savedPkgInfos: Record<string, PackageInfo>;
   let pkgInfo: PackageInfo|undefined;
   let depsEntries: [string, string][];
+  let optDepsEntries: [string, string][];
 
   savedPkgKeys = getSavedPkgKeys();
   version = !options.ignoreVersion ? version : 'latest'; // force version to be latest
@@ -187,18 +206,26 @@ export function install(pkgName: string, version: string='latest', options: Inst
   if (version === 'latest') {
     vPkgKey = getLatestVersion(pkgKey, savedPkgKeys);
     if (!vPkgKey) {
+      if (optional) {
+        console.log(chalk.yellow(`No package version found for the optional dependency ${chalk.bold(pkgName)}.`));
+        return false;
+      }
       console.log(chalk.red(`No package version found for ${chalk.bold(pkgName)}.`));
       return false;
     }
   } else {
-    vPkgKey = getVersionedKeyString(pkgKey, version);
-    console.log('Versioned', vPkgKey);
-    if (!savedPkgKeys.find(item => item === vPkgKey)) {
-      console.log(chalk.red(`Package ${chalk.bold(pkgName)} (v${version}) not found.`));
+    const foundPkg = findPackage(pkgKey, version);
+    if (!foundPkg) {
+      if (optional) {
+        console.log(chalk.yellow(`Optional package ${chalk.bold(pkgName)} (version=${version}) not found.`));
+        return false;
+      }
+      console.log(chalk.red(`Package ${chalk.bold(pkgName)} (version=${version}) not found.`));
       return false;
     }
+    vPkgKey = foundPkg;
   }
-
+  
   versionInfo = convertToVersionInfo(vPkgKey);
   if (!versionInfo) {
     console.log(chalk.red(`Cannot find package version info.`));
@@ -212,10 +239,16 @@ export function install(pkgName: string, version: string='latest', options: Inst
     return false;
   }
 
-  // install all the dependences first
+  // copy to node_modules first
+  fs.cpSync(path.join(DATA_DIR, `@${vPkgKey}`), pkgKey, { recursive: true });
+
+  // install all the dependencies
   if (pkgInfo.dependencies) {
     depsEntries = Object.entries(pkgInfo.dependencies);
     for (let entry of depsEntries) {
+      if (fs.existsSync('./node_modules/' + entry[0])) {
+        continue; // avoid to run in an infinite loop
+      }
       const version = !options.ignoreVersion ? entry[1] : 'latest';
       install(entry[0], version, { 
         ignoreVersion: !!options.ignoreVersion,
@@ -223,17 +256,62 @@ export function install(pkgName: string, version: string='latest', options: Inst
       });
     }
   }
+  // install all optional dependencies
+  if (pkgInfo.optionalDependencies) {
+    optDepsEntries = Object.entries(pkgInfo.optionalDependencies);
+    for (let entry of optDepsEntries) {
+      const version = !options.ignoreVersion ? entry[1] : 'latest';
+      if (fs.existsSync('./node_modules/' + entry[0]))
+        continue; // avoid to run in an infinite loop
+      install(entry[0], version, { 
+        ignoreVersion: !!options.ignoreVersion,
+        saveToConfig: false,
+      }, true); // true for optional
+    }
+  }
 
-  // copy to node_modules
-  fs.cpSync(path.join(DATA_DIR, `@${vPkgKey}`), pkgKey, { recursive: true });
   installBin(pkgName);
   saveToLockFile(vPkgKey);
   if (options.saveToConfig)
     saveDepToConfig(pkgName, pkgInfo.version, options.saveDev);
 
-  console.log(chalk.green(`${chalk.bold(pkgName)} (${pkgInfo.version}) successfully installed.`));
+  if (options.saveToConfig)
+    console.log(chalk.green(`${chalk.bold(pkgName)} (${pkgInfo.version}) successfully installed.`));
 
   return true;
+}
+
+/**
+ * Auto-installs all dependencies in package.json
+ * @param options 
+ */
+export function autoInstall(options: InstallationOptions={}) {
+  let pkgConfig: PkgConfig;
+  let deps: Record<string, string>|undefined;
+  let depsEntries: [string, string][];
+  let devDeps: Record<string, string>|undefined;
+  let devDepsEntries: [string, string][];
+
+  pkgConfig = getPkgConfig();
+  
+  deps = pkgConfig.dependencies;
+  if (deps) {
+    depsEntries = Object.entries(deps);
+    for (let entry of depsEntries) {
+      const pkgName = entry[0];
+      const version = entry[1];
+      install(pkgName, version, { ignoreVersion: !!options.ignoreVersion });
+    }
+  }
+  devDeps = pkgConfig.devDependencies;
+  if (devDeps) {
+    devDepsEntries = Object.entries(devDeps);
+    for (let entry of devDepsEntries) {
+      const pkgName = entry[0];
+      const version = entry[1];
+      install(pkgName, version, { ignoreVersion: !!options.ignoreVersion });
+    }
+  }
 }
 
 /**

@@ -23,7 +23,7 @@ program
   })
 
 program
-  .command('save')
+  .command('save-pkgs')
   .description('save all the packages from current project')
   .action(() => {
     pkgsHandler.savePackages();
@@ -54,7 +54,7 @@ program
   });
 
 program
-  .command('delete-all')
+  .command('delete-modules')
   .description('remove ./node_modules and ./package-lock.json')
   .action(() => {
     if (program.force) {
@@ -66,7 +66,7 @@ program
     }
 
     console.log(chalk.yellow(`This command will delete ${chalk.bold('./node_modules')} and ${chalk.bold('./package-lock.json')}.`));
-    console.log('Please use the -f or --force option to force.');
+    console.log('Please use the -f or --force option to confirm.');
     console.log(COMPLETE_PROC_MESSAGE);
   });
 
