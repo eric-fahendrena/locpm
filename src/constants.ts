@@ -1,7 +1,9 @@
 import { homedir } from "os";
 import path from "path";
 
-export const DATA_DIR = path.join(homedir(), '.opm'); // .opm
+export const APP_NAME = 'locpm';
+
+export const DATA_DIR = path.join(homedir(), `.${APP_NAME}`);
 export const PKG_LIST_FILENAME = '@pkg-keys.json';
 export const PKG_INFOS_FILENAME = '@pkg-infos.json';
 export const PKG_BIN_FILENAME = '@pkg-bin.json'

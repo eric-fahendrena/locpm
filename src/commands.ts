@@ -2,7 +2,8 @@ import { Command } from "commander";
 import * as pkgsHandler from "./lib/pkgs-handler.js";
 import * as pkgHelper from "./helpers/pkg.helper.js";
 import chalk from "chalk";
-import { cyan, warn } from "./utils/logs.js";
+import { cyan } from "./utils/logs.js";
+import { APP_NAME } from "./constants.js";
 
 export function init() {
   // create data directories if doesn't exist.
@@ -13,7 +14,7 @@ export function init() {
   const COMPLETE_PROC_MESSAGE = cyan('\nThe process is complete.');
   
   program
-    .name('locpm')
+    .name(APP_NAME)
     .description('This program allows you to reuse already installed node.js packages from other projects. This helps you to start project even if you are offline.')
     .version(VERSION)
     .option('-D, --save-dev', 'the packages will appear in devDependencies')
