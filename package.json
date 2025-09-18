@@ -1,6 +1,6 @@
 {
     "name": "locpm",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "This program allows developer to save already installed node.js packages from other projects and use them offline.",
     "main": "./dist/index.js",
     "bin": {
