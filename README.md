@@ -14,7 +14,7 @@ This is a CLI software that allows you to save and reuse your already installed 
 npm install -g locpm
 ```
 
-## Usage
+### Usage
 
 ```
 locpm [options] [command]
@@ -44,3 +44,24 @@ locpm install pkg-a pkg-b@latest
 # you can also use option
 locpm install --save-dev pkg-x pkg-y@1.2.3
 ```
+
+### Contributing
+
+The LOCPM project welcomes all constructive contributions. Contributions take many forms, from code for bug fixes and enhancements, to additions and fixes to documentation, additional tests, triaging incoming pull requests and issues, and more!
+
+### Running Tests
+
+To run the test suite, first install the dependencies:
+
+```bash
+npm install
+```
+
+Then run `npm test`:
+
+```bash
+npm test
+```
+
+### License
+MIT
