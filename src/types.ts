@@ -1,4 +1,7 @@
-export type PackageInfo = {
+/**
+ * Type for package info.
+ */
+export type PkgInfo = {
   version: string;
   revolved: string;
   integrity: string;
@@ -7,7 +10,10 @@ export type PackageInfo = {
   dependencies: Record<string, string>;
   optionalDependencies?: Record<string, string>;
 }
-// type for package.json
+
+/**
+ * Type for package config (for ./package.json).
+ */
 export type PkgConfig = {
   name: string;
   version: string;
@@ -22,19 +28,28 @@ export type PkgConfig = {
   type: string;
 };
 
+/**
+ * type for lockfile (./package-lock.json).
+ */
 export type PkgLockConfig = {
   name: string;
   version: string;
   lockfileVersion: number;
   requires: boolean;
-  packages: Record<string, PackageInfo>;
+  packages: Record<string, PkgInfo>;
 }
 
+/**
+ * Type for package version info.
+ */
 export type PkgVersionInfo = {
   key: string;
   version: string;
 }
 
+/**
+ * Options for installation.
+ */
 export type InstallationOptions = {
   saveDev?: boolean;
   ignoreVersion?: boolean;

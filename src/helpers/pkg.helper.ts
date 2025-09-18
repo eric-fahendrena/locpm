@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
-import type { PkgConfig, InstallationOptions, PackageInfo, PkgVersionInfo, PkgLockConfig } from '../types.js';
+import type { PkgConfig, InstallationOptions, PkgInfo, PkgVersionInfo, PkgLockConfig } from '../types.js';
 import { 
   DATA_DIR, 
   PKG_INFOS_FILENAME, 
@@ -58,7 +58,7 @@ export function createDataDir() {
  * 
  * @returns 
  */
-export function getPkgInfos(): Record<string, PackageInfo> {
+export function getPkgInfos(): Record<string, PkgInfo> {
   const lockFilePath = './package-lock.json';
   if (!fs.existsSync(lockFilePath)) {
     console.log(chalk.red('ERR'), './package-lock.json file not found.');
@@ -79,7 +79,7 @@ export function getPkgInfos(): Record<string, PackageInfo> {
  * @param pkgs 
  * @returns 
  */
-export function getPkgKeys(pkgs: Record<string, PackageInfo>): string[] {
+export function getPkgKeys(pkgs: Record<string, PkgInfo>): string[] {
   const pkgEntries = Object.entries(pkgs);
   let pkgPaths: string[] = [];
   
@@ -106,7 +106,7 @@ export function updatePkgKeysFile(pkgList: string[]): void {
  * Updates ~/.opm/@pkg-infos.json
  * @param pkgInfos 
  */
-export function updatePkgInfosFile(pkgInfos: Record<string, PackageInfo>): void {
+export function updatePkgInfosFile(pkgInfos: Record<string, PkgInfo>): void {
   const pkgInfosStr = JSON.stringify(pkgInfos, null, 4);
   if (!fs.existsSync(DATA_DIR)) 
     fs.mkdirSync(DATA_DIR);
@@ -135,7 +135,7 @@ export function getSavedPkgKeys(): string[] {
  * Gets data from ~/.opm/pkg-infos.json
  * @returns packages info
  */
-export function getSavedPkgInfos(): Record<string, PackageInfo> {
+export function getSavedPkgInfos(): Record<string, PkgInfo> {
   if (!fs.existsSync(DATA_DIR)) 
     fs.mkdirSync(DATA_DIR);
 
@@ -208,8 +208,8 @@ export function install(pkgName: string, version: string='latest', options: Inst
   let vPkgKey: string|null;
   let savedPkgKeys: string[];
   let versionInfo: PkgVersionInfo|null;
-  let savedPkgInfos: Record<string, PackageInfo>;
-  let pkgInfo: PackageInfo|undefined;
+  let savedPkgInfos: Record<string, PkgInfo>;
+  let pkgInfo: PkgInfo|undefined;
   let depsEntries: [string, string][];
   let optDepsEntries: [string, string][];
 

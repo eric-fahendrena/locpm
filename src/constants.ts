@@ -8,3 +8,4 @@ export const PKG_BIN_FILENAME = '@pkg-bin.json'
 export const NODE_MODULES_DIRNAME = '@node_modules';
 export const BIN_DIRNAME = '.@bin';
 export const LOGS_SEPARATOR = '';
+export const VERSION_PFX = '_#'; // prefix for version... well, it's more of a separator

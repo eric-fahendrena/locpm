@@ -1,17 +1,17 @@
 import chalk from "chalk";
-import type { PackageInfo, PkgVersionInfo } from "../types.js";
-
-const VERSION_PFX = '_#';
+import type { PkgInfo, PkgVersionInfo } from "../types.js";
+import { VERSION_PFX } from "../constants.js";
 
 /**
- * Get package infos with versioned keys (ex: keyname_#1.0.0)
+ * Gets package infos with versioned keys (ex: keyname_#1.0.0).
  * 
  * @param pkgInfos 
  * @returns 
  */
-export function getVersionedKeyPkgInfos(pkgInfos: Record<string, PackageInfo>): Record<string, PackageInfo> {
+export function getVersionedKeyPkgInfos(pkgInfos: Record<string, PkgInfo>): Record<string, PkgInfo> {
   // versioned key package infos
-  let vkPkgInfos: Record<string, PackageInfo> = {};
+  // ex: keyname_#1.0.0 => <package_info>
+  let vkPkgInfos: Record<string, PkgInfo> = {};
   const pkgEntries = Object.entries(pkgInfos);
   for (let entry of pkgEntries) {
     let pkgKey = entry[0];
@@ -23,6 +23,12 @@ export function getVersionedKeyPkgInfos(pkgInfos: Record<string, PackageInfo>): 
   return vkPkgInfos;
 }
 
+/**
+ * Converts versioned package key to VersionInfo type.
+ * 
+ * @param vPkgKey 
+ * @returns 
+ */
 export function convertToVersionInfo(vPkgKey: string): PkgVersionInfo|null {
   const [key, version] = vPkgKey.split(VERSION_PFX);
   if (!key || !version)
@@ -30,10 +36,24 @@ export function convertToVersionInfo(vPkgKey: string): PkgVersionInfo|null {
   return { key, version };
 }
 
+/**
+ * Gets versioned key string.
+ * 
+ * @param pkgKey 
+ * @param pkgVersion 
+ * @returns 
+ */
 export function getVersionedKeyString(pkgKey: string, pkgVersion: string): string {
   return pkgKey + VERSION_PFX + pkgVersion.replace('^', '');
 }
 
+/**
+ * Gets the latest available version for a package. Using non versioned package key.
+ * 
+ * @param pkgKey 
+ * @param pkgKeys 
+ * @returns 
+ */
 export function getLatestVersion(pkgKey: string, pkgKeys: string[]): string|null {
   const filtPkgs = pkgKeys.filter(pkg => pkg.match(new RegExp(`^${pkgKey}${VERSION_PFX}`)));
   const latestPkgVersion = filtPkgs[filtPkgs.length-1];
@@ -43,7 +63,18 @@ export function getLatestVersion(pkgKey: string, pkgKeys: string[]): string|null
   return latestPkgVersion;
 }
 
+/**
+ * Compares versions.
+ * For now, this cannot treat version format that includes letter like `alpha`, `beta`...
+ * 
+ * @param rVersion 
+ * @param cVersion 
+ * @returns 
+ */
 export function compareVersions(rVersion: string, cVersion: string): boolean {
+  // This algorithm is a little wonky, but I think it will do the trick.
+  // If you have time to create another a more secure one, feel free to do so ;-).
+  
   let symbol: string;
   
   if (rVersion === '*') 
@@ -132,7 +163,14 @@ export function compareVersions(rVersion: string, cVersion: string): boolean {
   return true;
 }
 
-export function compareComplexVersions(rVersion: string, cVersion: string): boolean {
+/**
+ * Compares more complex versions format like ex: ^1.0.0 || ^2.0.0 or >=0.2.0 <2.3.3.
+ * 
+ * @param rVersion 
+ * @param cVersion 
+ * @returns 
+ */
+function compareComplexVersions(rVersion: string, cVersion: string): boolean {
   let rVersions: string[] = [];
   
   if (rVersion.split('||').length > 1) {
