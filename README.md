@@ -2,10 +2,10 @@
 
 This is a CLI software that allows you to save and reuse your already installed npm packages locally.
 
-- **Ultra-fast installation without internet** 
-- **Save bandwidth and time**
-- **Ideal for secure/offline environments**
-- **No more panic when npm is down or removes a package**
+- Ultra-fast installation without internet 
+- Save bandwidth and time
+- Ideal for secure/offline environments
+- No more panic when npm is down or removes a package
 
 
 ## Installation
@@ -21,7 +21,7 @@ locpm [options] [command]
 ```
 #### Example
 
-Save all the packages installed in an existing project. Then, create a new npm project and dependencies for it.
+Save all the installed packages in an existing project. Then, create a new npm project and install the needed dependencies.
 
 ```bash
 # go to an existing project
@@ -45,7 +45,7 @@ locpm install pkg-a pkg-b@latest
 # you can also use option
 locpm install --save-dev pkg-x pkg-y@1.2.3
 
-# use --help option to view help
+# use the --help option to view help
 locpm --help
 ```
 
