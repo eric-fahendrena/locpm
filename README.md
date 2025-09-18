@@ -11,7 +11,7 @@ This is a CLI software that allows you to save and reuse your already installed 
 ## Installation
 
 ```bash
-npm install -g locpm
+npm i -g locpm
 ```
 
 ### Usage
@@ -34,15 +34,19 @@ locpm save
 cd ..
 mkdir new-project
 cd new-project
+
+# Installation
+
 # initialize an npm project first
 npm init -y
-
-# installation
 
 # install needed dependencies
 locpm install pkg-a pkg-b@latest
 # you can also use option
 locpm install --save-dev pkg-x pkg-y@1.2.3
+
+# use --help option to view help
+locpm --help
 ```
 
 ### Contributing
