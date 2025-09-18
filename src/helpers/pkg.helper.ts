@@ -8,6 +8,7 @@ import {
   PKG_LIST_FILENAME, 
   NODE_MODULES_DIRNAME,
   LOGS_SEPARATOR,
+  APP_NAME,
 } from '../constants.js';
 import { installBin, saveBin } from './bin.helper.js';
 import { getLatestVersion, getVersionedKeyPkgInfos, getVersionedKeyString, convertToVersionInfo, compareVersions } from './version.helper.js';
@@ -223,7 +224,7 @@ export function install(pkgName: string, version: string='latest', options: Inst
         return false;
       }
       console.log(chalk.red(`No package version found for ${chalk.bold(pkgName)}.`));
-      console.log(chalk.gray('Tips:'), `Go to another project that uses ${chalk.bold(pink(pkgName))} and run: ${cyan('opm save-pkgs')}.`);
+      console.log(chalk.gray('Tips:'), `Go to another project that uses ${chalk.bold(pink(pkgName))} and run: ${cyan(`${APP_NAME} save`)}.`);
       return false;
     }
   } else {
@@ -235,7 +236,7 @@ export function install(pkgName: string, version: string='latest', options: Inst
 
       console.log(chalk.red(`Package ${chalk.bold(pkgName)} (version=${version}) not found.`));
       console.log(chalk.gray('Tips:'));
-      console.log(` Go to another project that uses ${chalk.bold(pink(pkgName))} (${pink('version='+version)}) and run: ${cyan('opm save-pkgs')}. (recomended)`);
+      console.log(` Go to another project that uses ${chalk.bold(pink(pkgName))} (${pink('version='+version)}) and run: ${cyan(`${APP_NAME} save`)}. (recomended)`);
       console.log(` Use the ${cyan('-i')} or ${cyan('--ignore-version')} option to install the latest available version.`);
       console.log(LOGS_SEPARATOR);
 
