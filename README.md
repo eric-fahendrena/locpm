@@ -67,5 +67,7 @@ Then run `npm test`:
 npm test
 ```
 
+*NOTE: The tests are still under development. Contributions are welcome to improve them.*
+
 ### License
 MIT
