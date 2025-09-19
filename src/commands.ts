@@ -68,7 +68,7 @@ export function init() {
       }
   
       console.log(`This command will delete ${chalk.bold('./node_modules')} and ${chalk.bold('./package-lock.json')}.`);
-      console.log('Please use the -f or --force option to confirm.');
+      console.log(`Please use the ${cyan('-f')} or ${cyan('--force')} option to confirm.`);
       console.log(COMPLETE_PROC_MESSAGE);
     });
   
@@ -87,7 +87,7 @@ export function init() {
       }
   
       console.log(`This command will clear all saved data in the cache.`);
-      console.log('Please use the -f or --force option to confirm.');
+      console.log(`Please use the ${cyan('-f')} or ${cyan('--force')} option to confirm.`);
       console.log(COMPLETE_PROC_MESSAGE);
     });
   
