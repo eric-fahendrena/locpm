@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/locpm)](https://npmjs.org/package/locpm)
 [![Node.js](https://img.shields.io/badge/node-18.x-green)](https://nodejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-green)](https://typescriptlang.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-✔️-blue)](https://typescriptlang.org)
 
 This is a CLI software that allows you to save and reuse your already installed npm packages locally.
 
