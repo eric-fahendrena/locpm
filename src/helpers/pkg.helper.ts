@@ -92,7 +92,7 @@ export function getPkgKeys(pkgs: Record<string, PkgInfo>): string[] {
 }
 
 /**
- * Updates ~/.opm/@pkg-list.json.
+ * Updates ~/.locpm/@pkg-list.json.
  * @param pkgList 
  */
 export function updatePkgKeysFile(pkgList: string[]): void {
@@ -104,7 +104,7 @@ export function updatePkgKeysFile(pkgList: string[]): void {
 }
 
 /**
- * Updates ~/.opm/@pkg-infos.json
+ * Updates ~/.locpm/@pkg-infos.json
  * @param pkgInfos 
  */
 export function updatePkgInfosFile(pkgInfos: Record<string, PkgInfo>): void {
@@ -116,7 +116,7 @@ export function updatePkgInfosFile(pkgInfos: Record<string, PkgInfo>): void {
 }
 
 /**
- * Gets data from ~/.opm/pkg-list.json
+ * Gets data from ~/.locpm/pkg-list.json
  * @returns package list
  */
 export function getSavedPkgKeys(): string[] {
@@ -133,7 +133,7 @@ export function getSavedPkgKeys(): string[] {
 }
 
 /**
- * Gets data from ~/.opm/pkg-infos.json
+ * Gets data from ~/.locpm/pkg-infos.json
  * @returns packages info
  */
 export function getSavedPkgInfos(): Record<string, PkgInfo> {
@@ -150,7 +150,7 @@ export function getSavedPkgInfos(): Record<string, PkgInfo> {
 }
 
 /**
- * Saves node_modules to ~/.opm/@node_modules.
+ * Saves node_modules to ~/.locpm/@node_modules.
  * 
  * @param pkgList 
  */

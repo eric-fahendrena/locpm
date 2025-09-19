@@ -3,6 +3,7 @@ import * as pkgHelper from "../helpers/pkg.helper.js";
 import type { InstallationOptions } from "../types.js";
 import path from "path";
 import { homedir } from "os";
+import { APP_NAME } from "../constants.js";
 
 /**
  * Saves all the package from the project. 
@@ -62,5 +63,5 @@ export function deleteModules() {
  * Clear all the data stocked in the cache.
  */
 export function clearCache() {
-  fs.rmSync(path.join(homedir(), '.opm'), { recursive: true, force: true });
+  fs.rmSync(path.join(homedir(), `.${APP_NAME}`), { recursive: true, force: true });
 }
