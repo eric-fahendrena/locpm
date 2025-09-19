@@ -4,12 +4,17 @@ import * as pkgHelper from "./helpers/pkg.helper.js";
 import chalk from "chalk";
 import { cyan } from "./utils/logs.js";
 import { APP_NAME } from "./constants.js";
+import { readFileSync } from "fs";
+import type { PkgConfig } from "./types.js";
 
 export function init() {
   // create data directories if doesn't exist.
   pkgHelper.createDataDir();
   
-  const VERSION = '1.0.0';
+  const pkgJsonString = readFileSync('./package.json').toString();
+  const pkgJson: PkgConfig = JSON.parse(pkgJsonString);
+  
+  const VERSION = pkgJson.version;
   const program = new Command();
   const COMPLETE_PROC_MESSAGE = cyan('\nThe process is complete.');
   
