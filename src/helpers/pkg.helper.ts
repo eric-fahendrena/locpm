@@ -265,7 +265,7 @@ export function install(pkgName: string, version: string='latest', options: Inst
   if (pkgInfo.dependencies) {
     depsEntries = Object.entries(pkgInfo.dependencies);
     for (let entry of depsEntries) {
-      if (fs.existsSync('./node_modules/' + entry[0])) {
+      if (!options.saveToConfig && fs.existsSync('./node_modules/' + entry[0])) {
         continue; // avoid to run in an infinite loop
       }
       const version = !options.ignoreVersion ? entry[1] : 'latest';
@@ -282,8 +282,9 @@ export function install(pkgName: string, version: string='latest', options: Inst
     optDepsEntries = Object.entries(pkgInfo.optionalDependencies);
     for (let entry of optDepsEntries) {
       const version = !options.ignoreVersion ? entry[1] : 'latest';
-      if (fs.existsSync('./node_modules/' + entry[0]))
+      if (!options.saveToConfig && fs.existsSync('./node_modules/' + entry[0])) {
         continue; // avoid to run in an infinite loop
+      }
       
       const installed = install(entry[0], version, { 
         ignoreVersion: !!options.ignoreVersion,
