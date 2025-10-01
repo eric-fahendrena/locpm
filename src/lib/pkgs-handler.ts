@@ -28,11 +28,19 @@ export function installPackages(pkgNames: string[] = [], options: InstallationOp
   
   // pkgNames is not empty
   for (let pkgName of pkgNames) {
+    let startsWithAtSign = false;
+    if (pkgName[0] === '@') {
+      startsWithAtSign = true;
+      pkgName = pkgName.replace(/^@/, '');
+    }
     let name: string;
     let version = 'latest';
     const splitedName = pkgName.split('@'); // ['pkgname', '1.0.0']
     
     name = splitedName[0] ?? pkgName;
+    if (startsWithAtSign) 
+      name = '@' + name;
+
     if (splitedName[1]) {
       version = splitedName[1];
     }
