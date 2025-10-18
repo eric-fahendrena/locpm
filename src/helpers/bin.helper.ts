@@ -17,7 +17,7 @@ export function saveBin() {
     return;
   }
   // copying bin
-  fs.cpSync(binPath, path.join(DATA_DIR, BIN_DIRNAME), { recursive: true });
+  fs.cpSync(binPath, path.join(DATA_DIR, BIN_DIRNAME), { recursive: true, force: true });
 }
 
 export function installBin(pkgName: string) {
