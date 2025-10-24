@@ -5,6 +5,8 @@
 [![Node.js](https://img.shields.io/badge/node-18.x-green)](https://nodejs.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
+<img src="assets/images/logo.png" alt="locpm logo" width="320" />
+
 This is a CLI software that allows you to save and reuse your already installed npm packages locally.
 
 - Ultra-fast installation without internet 
